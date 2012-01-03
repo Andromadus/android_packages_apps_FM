@@ -42,6 +42,7 @@ interface IFMRadioService
     int getIoC();
     int getMpxDcc();
     int getIntDet();
+    int getSINR();
     void setHiLoInj(int inj);
     void delayedStop(long nDuration, int nType);
     void cancelDelayedStop (int nType);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -53,6 +53,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.hardware.fmradio.FmReceiver;
+import android.os.SystemProperties;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -88,6 +89,7 @@ public class FMStats extends Activity  {
       private String mIoC;
       private String mIntDet;
       private String mMpxDcc;
+      private String mSINR;
 
 
       public void setFreq(String aFreq) {
@@ -128,6 +130,13 @@ public class FMStats extends Activity  {
 
       public String getMpxDcc() {
          return mMpxDcc;
+      }
+      public void setSINR(String aSINR) {
+         this.mSINR = aSINR;
+      }
+
+      public String getSINR() {
+         return mSINR;
       }
 
     };
@@ -221,6 +230,7 @@ public class FMStats extends Activity  {
 	mColumnHeader.setFreq("Freq");
 	mColumnHeader.setRSSI("RMSSI");
 	mColumnHeader.setIoC("IoC");
+        mColumnHeader.setSINR("SINR");
 	mColumnHeader.setMpxDcc("Offset");
 	mColumnHeader.setIntDet("IntDet");
     }
@@ -543,12 +553,21 @@ public class CfgRfItemSelectedListener implements OnItemSelectedListener {
         colIoC.setTextSize(TypedValue.COMPLEX_UNIT_SP, 25);
         colIoC.setWidth(width/4);
         tr2.addView(colIoC);
-
-        TextView colMpxDcc = new TextView(getApplicationContext());
-        colMpxDcc.setText(aRes.getMpxDcc());
-        colMpxDcc.setTextSize(TypedValue.COMPLEX_UNIT_SP, 25);
-        colMpxDcc.setWidth(width/4);
-        tr2.addView(colMpxDcc);
+        if("smd".equals(SystemProperties.get("ro.qualcomm.bt.hci_transport")))
+        {
+             TextView colSINR = new TextView(getApplicationContext());
+             colSINR.setText(aRes.getSINR());
+             colSINR.setTextSize(TypedValue.COMPLEX_UNIT_SP, 25);
+             colSINR.setWidth(width/4);
+             tr2.addView(colSINR);
+        } else
+        {
+             TextView colMpxDcc = new TextView(getApplicationContext());
+             colMpxDcc.setText(aRes.getMpxDcc());
+             colMpxDcc.setTextSize(TypedValue.COMPLEX_UNIT_SP, 25);
+             colMpxDcc.setWidth(width/4);
+             tr2.addView(colMpxDcc);
+        }
           /* Add row to TableLayout. */
           /* Add row to TableLayout. */
         tl.addView(tr2,new TableLayout.LayoutParams(
@@ -566,8 +585,16 @@ public class CfgRfItemSelectedListener implements OnItemSelectedListener {
              tempStr.append('\t');
              tempStr.append(aRes.getIntDet());
              tempStr.append('\t');
-             tempStr.append(aRes.getMpxDcc());
-             tempStr.append('\n');
+
+             if("smd".equals(SystemProperties.get("ro.qualcomm.bt.hci_transport")))
+             {
+                  tempStr.append(aRes.getSINR());
+                  tempStr.append('\t');
+             } else
+             {
+                  tempStr.append(aRes.getMpxDcc());
+                  tempStr.append('\n');
+             }
              String testStr = new String(tempStr);
              mFileCursor.write(testStr.getBytes());
 	} catch ( IOException ioe) {
@@ -796,6 +823,7 @@ public class CfgRfItemSelectedListener implements OnItemSelectedListener {
         int nIoC = 0;
         int nIntDet = 0;
         int nMpxDcc = 0;
+        byte nSINR = 0;
         if(null != mService) {
         try {
 
@@ -828,12 +856,27 @@ public class CfgRfItemSelectedListener implements OnItemSelectedListener {
         {
             e.printStackTrace();
         }
+
+        try {
+            nSINR = (byte)mService.getSINR();
+
+        } catch (RemoteException e)
+        {
+            e.printStackTrace();
+        }
+
         }
 
         result.setRSSI(Byte.toString(nRssi));
         result.setIoC(Integer.toString(nIoC));
+        if("smd".equals(SystemProperties.get("ro.qualcomm.bt.hci_transport")))
+        {
+             result.setSINR(Integer.toString(nSINR));
+        } else
+        {
+             result.setMpxDcc(Integer.toString(nMpxDcc));
+        }
         result.setIntDet(Integer.toString(nIntDet));
-        result.setMpxDcc(Integer.toString(nMpxDcc));
 
         return result;
     }

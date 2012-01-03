@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1360,6 +1360,11 @@ public class FMRadioService extends Service
       {
           mService.get().requestFocus();
       }
+      public int getSINR()
+      {
+          return (mService.get().getSINR());
+      }
+
    }
 
    private final IBinder mBinder = new ServiceStub(this);
@@ -2408,6 +2413,9 @@ public class FMRadioService extends Service
    }
    public void setHiLoInj(int inj){
            mReceiver.setHiLoInj(inj);
+   }
+   public int getSINR() {
+           return mReceiver.getSINR();
    }
    //handling the sleep and record stop when FM App not in focus
    private void delayedStop(long duration, int nType) {
