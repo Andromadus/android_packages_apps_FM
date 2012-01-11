@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -106,7 +106,7 @@ public class FmSharedPreferences
    private static final String LAST_LIST_INDEX = "last_list_index";
    private static final String PREF_LAST_TUNED_FREQUENCY = "last_frequency";
    private static final String LAST_RECORD_DURATION = "last_record_duration";
-
+   private static String  LAST_AF_JUMP_VALUE = "last_af_jump_value";
 
    private static Map<String, String> mNameMap = new HashMap<String, String>();
    private static List<PresetList> mListOfPlists = new ArrayList<PresetList>();
@@ -394,7 +394,8 @@ public class FmSharedPreferences
       SharedPreferences sp = mContext.getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE);
       mTunedFrequency = sp.getInt(PREF_LAST_TUNED_FREQUENCY, DEFAULT_NO_FREQUENCY);
       mRecordDuration = sp.getInt(LAST_RECORD_DURATION, RECORD_DUR_INDEX_0_VAL);
-      /* Reset the Lists before reading the preferences */
+      mAFAutoSwitch = sp.getBoolean(LAST_AF_JUMP_VALUE, true);
+     /* Reset the Lists before reading the preferences */
       mListOfPlists.clear();
 
       int num_lists = sp.getInt(LIST_NUM, 1);
@@ -495,7 +496,7 @@ public class FmSharedPreferences
       /* Save Configuration */
       ed.putInt(FMCONFIG_COUNTRY, mCountry);
       ed.putInt(LAST_RECORD_DURATION, mRecordDuration);
-
+      ed.putBoolean(LAST_AF_JUMP_VALUE, mAFAutoSwitch);
       ed.commit();
    }
 

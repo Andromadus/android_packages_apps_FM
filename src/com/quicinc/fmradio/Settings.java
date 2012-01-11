@@ -237,6 +237,7 @@ public class Settings extends PreferenceActivity implements
                                                         + bAFAutoSwitch);
                                         FmSharedPreferences.setAutoAFSwitch(bAFAutoSwitch);
                                         FMRadio.fmAutoAFSwitch();
+                                        mPrefs.Save();
                                 } else if (key.equals(RECORD_DURATION_KEY)) {
                if(FMRadio.RECORDING_ENABLE)
                {
