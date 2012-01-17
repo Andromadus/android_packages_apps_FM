@@ -1736,12 +1736,13 @@ public class FMRadioService extends Service
        mSpeakerPhoneOn = speakerOn;
        boolean analogmode = isAnalogModeSupported();
        if (false == speakerOn) {
-           stopFM();
            if (analogmode) {
+                stopFM();
                 setAudioPath(true);
            }
            AudioSystem.setForceUse(AudioSystem.FOR_MEDIA, AudioSystem.FORCE_NONE);
-           startFM();
+           if (analogmode)
+                startFM();
        }
 
        //Need to turn off BT path when Speaker is set on vice versa.
@@ -1754,8 +1755,8 @@ public class FMRadioService extends Service
            }
        }
        if (speakerOn) {
-           stopFM();
            if (analogmode) {
+                 stopFM();
                  if (mMuted) {
                      setAudioPath(false);
                  } else {
@@ -1765,7 +1766,8 @@ public class FMRadioService extends Service
                  }
            }
            AudioSystem.setForceUse(AudioSystem.FOR_MEDIA, AudioSystem.FORCE_SPEAKER);
-           startFM();
+           if (analogmode)
+                startFM();
        }
 
    }
