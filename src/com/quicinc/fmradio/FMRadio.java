@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -361,10 +361,8 @@ public class FMRadio extends Activity
    public void onRestart() {
       Log.d(LOGTAG, "FMRadio: onRestart");
       try {
-         if (null != mService && isFmOn()) {
+         if (null != mService) {
               mService.requestFocus();
-         } else {
-              enableRadio();
          }
       } catch (Exception e) {
          e.printStackTrace();
