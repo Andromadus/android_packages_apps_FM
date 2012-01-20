@@ -1026,6 +1026,9 @@ public class FMRadioService extends Service
                       Log.v(LOGTAG, "AudioFocus: received AUDIOFOCUS_LOSS_TRANSIENT");
                       if (mSpeakerPhoneOn) {
                           mSpeakerPhoneOn = false;
+                          if (isAnalogModeSupported()) {
+                              setAudioPath(true);
+                          }
                           AudioSystem.setForceUse(AudioSystem.FOR_MEDIA, AudioSystem.FORCE_NONE);
                       }
                       if(true == isFmRecordingOn())
