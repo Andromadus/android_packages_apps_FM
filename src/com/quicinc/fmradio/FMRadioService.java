@@ -292,6 +292,7 @@ public class FMRadioService extends Service
                            (mOverA2DP == false)) {
                           mReceiver.disable();
                           mReceiver = null;
+                          stop();
                        }
                        mHandler.post(mHeadsetPluginHandler);
                     } else if(mA2dpDeviceState.isA2dpStateChange(action) ) {

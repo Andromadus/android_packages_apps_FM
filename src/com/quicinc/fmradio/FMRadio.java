@@ -2793,31 +2793,39 @@ public class FMRadio extends Activity
 
    private void tuneRadio(int frequency){
       /* Issue the tune command only if tuneCommand is already not active */
-      if( (mService != null) && (mCommandActive != CMD_TUNE))
+      if( (mService != null) && (mCommandActive != CMD_TUNE) &&  isFmOn() )
       {
          boolean bStatus = false;
          try
          {
 
             bStatus = mService.tune(frequency);
-            mTunedStation.setName("");
-            mTunedStation.setPI(0);
-            mTunedStation.setPty(0);
-            updateStationInfoToUI();
             if(bStatus)
             {
                postTimeoutHandler(CMD_TUNE);
             }
             else
             {
-               mCommandFailed = CMD_TUNE;
-               Log.e(LOGTAG, " mService.tune failed");
-               showDialog(DIALOG_CMD_FAILED);
+               if(isFmOn())
+               {
+                 mCommandFailed = CMD_TUNE;
+                 Log.e(LOGTAG, " mService.tune failed");
+                 showDialog(DIALOG_CMD_FAILED);
+               }
             }
-         } catch (RemoteException e)
+            mTunedStation.setName("");
+            mTunedStation.setPI(0);
+            mTunedStation.setPty(0);
+            updateStationInfoToUI();
+         }
+         catch (RemoteException e)
          {
             e.printStackTrace();
          }
+      }
+      else
+      {
+          Log.e(LOGTAG, "Delayed Tune handler stopped");
       }
    }
 
