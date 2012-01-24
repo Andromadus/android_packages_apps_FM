@@ -1430,7 +1430,11 @@ public class FMRadioService extends Service
             Log.d(LOGTAG, "fmOn: LowerLimit  :"+ config.getLowerLimit());
             Log.d(LOGTAG, "fmOn: UpperLimit  :"+ config.getUpperLimit());
             bStatus = mReceiver.enable(FmSharedPreferences.getFMConfiguration());
-            setAudioPath(true);
+            if (isSpeakerEnabled()) {
+                setAudioPath(false);
+            } else {
+                setAudioPath(true);
+            }
             Log.d(LOGTAG, "mReceiver.enable done, Status :" +  bStatus);
          }
 
