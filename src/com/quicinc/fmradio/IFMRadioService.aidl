@@ -6,6 +6,7 @@ interface IFMRadioService
 {
     boolean fmOn();
     boolean fmOff();
+    boolean fmRadioReset();
     boolean isFmOn();
     boolean isAnalogModeEnabled();
     boolean isFmRecordingOn();

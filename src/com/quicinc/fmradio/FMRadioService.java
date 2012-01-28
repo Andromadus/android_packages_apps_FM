@@ -142,6 +142,8 @@ public class FMRadioService extends Service
    private boolean mAppShutdown = false;
    private boolean mSingleRecordingInstanceSupported = false;
 
+   private static final String IOBUSY_UNVOTE = "com.android.server.CpuGovernorService.action.IOBUSY_UNVOTE";
+
    public FMRadioService() {
    }
 
@@ -625,6 +627,20 @@ public class FMRadioService extends Service
        mPlaybackInProgress = false;
    }
 
+   private void resetFM(){
+       Log.d(LOGTAG, "resetFM");
+       if (mOverA2DP==true){
+           mOverA2DP=false;
+           resetA2dpPlayback();
+       }else{
+           Log.d(LOGTAG, "FMRadio: sending the intent");
+           Intent intent = new Intent(Intent.ACTION_FM);
+           intent.putExtra("state", 0);
+           getApplicationContext().sendBroadcast(intent);
+       }
+       mPlaybackInProgress = false;
+   }
+
    public boolean startRecording() {
         Log.d(LOGTAG, "In startRecording of Recorder");
     if( (true == mSingleRecordingInstanceSupported) &&
@@ -746,6 +762,74 @@ public class FMRadioService extends Service
            mA2dp = null;
        } catch (Exception exception ) {
            Log.e( LOGTAG, "Stop failed with exception"+ exception);
+       }
+       return;
+   }
+
+   private void resetA2dpPlayback() {
+       if (mA2dp == null)
+           return;
+       if(mA2DPSampleFile != null)
+       {
+          try {
+              mA2DPSampleFile.delete();
+          } catch (Exception e) {
+              Log.e(LOGTAG, "Not able to delete file");
+          }
+       }
+       try {
+           // Send Intent for IOBUSY VOTE, because MediaRecorder.stop
+           // gets Activity context which might not be always available
+           // and would thus fail to send the intent.
+           Intent ioBusyUnVoteIntent = new Intent(IOBUSY_UNVOTE);
+           // Remove vote for io_is_busy to be turned off.
+           ioBusyUnVoteIntent.putExtra("com.android.server.CpuGovernorService.voteType", 0);
+           sendBroadcast(ioBusyUnVoteIntent);
+
+           mA2dp.stop();
+
+           mA2dp.reset();
+           mA2dp.release();
+           mA2dp = null;
+       } catch (Exception exception ) {
+           Log.e( LOGTAG, "Stop failed with exception"+ exception);
+       }
+       return;
+   }
+
+   private void resetRecording() {
+
+       Log.v(LOGTAG, "resetRecording()");
+
+       mFmRecordingOn = false;
+       if (mRecorder == null)
+           return;
+
+       // Send Intent for IOBUSY VOTE, because MediaRecorder.stop
+       // gets Activity context which might not be always available
+       // and would thus fail to send the intent.
+       Intent ioBusyUnVoteIntent = new Intent(IOBUSY_UNVOTE);
+       // Remove vote for io_is_busy to be turned off.
+       ioBusyUnVoteIntent.putExtra("com.android.server.CpuGovernorService.voteType", 0);
+       sendBroadcast(ioBusyUnVoteIntent);
+
+       mRecorder.stop();
+
+       mRecorder.reset();
+       mRecorder.release();
+       mRecorder = null;
+       int sampleLength = (int)((System.currentTimeMillis() - mSampleStart)/1000 );
+       if (sampleLength == 0)
+           return;
+       String state = Environment.getExternalStorageState();
+       Log.d(LOGTAG, "storage state is " + state);
+
+       if (Environment.MEDIA_MOUNTED.equals(state)) {
+           this.addToMediaDB(mSampleFile);
+       }
+       else{
+           Log.e(LOGTAG, "SD card must have removed during recording. ");
+           Toast.makeText(this, "Recording aborted", Toast.LENGTH_SHORT).show();
        }
        return;
    }
@@ -1183,6 +1267,12 @@ public class FMRadioService extends Service
          return(mService.get().fmOff());
       }
 
+      public boolean fmRadioReset() throws RemoteException
+      {
+         mRadioState=false;
+         return true;
+      }
+
       public boolean isFmOn()
       {
          return(mService.get().isFmOn());
@@ -1502,12 +1592,9 @@ public class FMRadioService extends Service
    }
 
   /*
-   * Turn OFF FM: Disable the FM Host and hardware                                  .
-   *                                                                                 .
-   * @return true if fm Disable api was invoked successfully, false if the api failed.
+   * Turn OFF FM Operations: This disables all the current FM operations             .
    */
-   private boolean fmOff() {
-      boolean bStatus=false;
+   private void fmOperationsOff() {
       if ( mSpeakerPhoneOn)
       {
           mSpeakerPhoneOn = false;
@@ -1531,6 +1618,49 @@ public class FMRadioService extends Service
               SystemProperties.set("hw.fm.isAnalog","false");
               misAnalogPathEnabled = false;
       }
+   }
+
+  /*
+   * Reset (OFF) FM Operations: This resets all the current FM operations             .
+   */
+   private void fmOperationsReset() {
+      if ( mSpeakerPhoneOn)
+      {
+          mSpeakerPhoneOn = false;
+          AudioSystem.setForceUse(AudioSystem.FOR_MEDIA, AudioSystem.FORCE_NONE);
+      }
+
+      if (isFmRecordingOn())
+      {
+          resetRecording();
+      }
+
+      AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+      if(audioManager != null)
+      {
+         Log.d(LOGTAG, "audioManager.setFmRadioOn = false \n" );
+         unMute();
+         resetFM();
+         //audioManager.setParameters("FMRadioOn=false");
+         Log.d(LOGTAG, "audioManager.setFmRadioOn false done \n" );
+      }
+
+      if (isAnalogModeEnabled()) {
+              SystemProperties.set("hw.fm.isAnalog","false");
+              misAnalogPathEnabled = false;
+      }
+   }
+
+  /*
+   * Turn OFF FM: Disable the FM Host and hardware                                  .
+   *                                                                                 .
+   * @return true if fm Disable api was invoked successfully, false if the api failed.
+   */
+   private boolean fmOff() {
+      boolean bStatus=false;
+
+      fmOperationsOff();
+
       // This will disable the FM radio device
       if (mReceiver != null)
       {
@@ -1540,6 +1670,29 @@ public class FMRadioService extends Service
       stop();
       return(bStatus);
    }
+
+  /*
+   * Turn OFF FM: Disable the FM Host when hardware resets asynchronously            .
+   *                                                                                 .
+   * @return true if fm Reset api was invoked successfully, false if the api failed  .
+   */
+   private boolean fmRadioReset() {
+      boolean bStatus=false;
+
+      Log.v(LOGTAG, "fmRadioReset");
+
+      fmOperationsReset();
+
+      // This will reset the FM radio receiver
+      if (mReceiver != null)
+      {
+         bStatus = mReceiver.reset();
+         mReceiver = null;
+      }
+      stop();
+      return(bStatus);
+   }
+
    /* Returns whether FM hardware is ON.
     *
     * @return true if FM was tuned, searching. (at the end of
@@ -2155,10 +2308,32 @@ public class FMRadioService extends Service
       public void FmRxEvEnableReceiver() {
          Log.d(LOGTAG, "FmRxEvEnableReceiver");
       }
-
       public void FmRxEvDisableReceiver()
       {
          Log.d(LOGTAG, "FmRxEvDisableReceiver");
+      }
+      public void FmRxEvRadioReset()
+      {
+         Log.d(LOGTAG, "FmRxEvRadioReset");
+         if(isFmOn()) {
+             // Received radio reset event while FM is ON
+             Log.d(LOGTAG, "FM Radio reset");
+             fmRadioReset();
+             try
+             {
+                /* Notify the UI/Activity, only if the service is "bound"
+                   by an activity and if Callbacks are registered
+                */
+                if((mServiceInUse) && (mCallbacks != null) )
+                {
+                    mCallbacks.onRadioReset();
+                }
+             }
+             catch (RemoteException e)
+             {
+                e.printStackTrace();
+             }
+         }
       }
       public void FmRxEvConfigReceiver()
       {

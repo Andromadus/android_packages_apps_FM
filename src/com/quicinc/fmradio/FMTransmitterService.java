@@ -383,6 +383,10 @@ public class FMTransmitterService extends Service
       {
          return(mService.get().fmOff());
       }
+      public boolean fmRadioReset() throws RemoteException
+      {
+         return(mService.get().fmRadioReset());
+      }
       public boolean fmRestart() throws RemoteException
       {
          return(mService.get().fmRestart());
@@ -534,6 +538,18 @@ public class FMTransmitterService extends Service
       return(bStatus);
    }
 
+  /*
+   * Turn OFF FM Operations: This disables all the current FM operations             .
+   */
+   private void fmOperationsOff() {
+
+      Log.d(LOGTAG, "fmOperationsOff" );
+
+      Log.e(LOGTAG, "FMTx is off: sending the intent");
+      Intent intent = new Intent(Intent.ACTION_FM_TX);
+      intent.putExtra("state", 0);
+      getApplicationContext().sendBroadcast(intent);
+   }
    /*
     * Turn OFF FM: Disable the FM Host and hardware                                  .
     *                                                                                 .
@@ -541,13 +557,9 @@ public class FMTransmitterService extends Service
     */
    private boolean fmOff() {
       boolean bStatus=false;
-      Log.d(LOGTAG, "fmOff" );
+      Log.d(LOGTAG, "fmOff");
 
-      Log.e(LOGTAG, "FMTx is off: sending the intent");
-      Intent intent = new Intent(Intent.ACTION_FM_TX);
-      intent.putExtra("state", 0);
-      getApplicationContext().sendBroadcast(intent);
-
+      fmOperationsOff();
 
       // This will disable the FM radio device
       if (mTransmitter != null)
@@ -564,7 +576,31 @@ public class FMTransmitterService extends Service
       stop();
       return(bStatus);
    }
+  /*
+   * Turn OFF FM: Disable the FM Host when hardware resets asynchronously            .
+   *                                                                                 .
+   * @return true if fm Reset api was invoked successfully, false if the api failed  .
+   */
+   private boolean fmRadioReset() {
+      boolean bStatus=false;
+      Log.d(LOGTAG, "fmRadioReset");
+      fmOperationsOff();
 
+      // This will disable the FM radio device
+      if (mTransmitter != null)
+      {
+         bStatus = mTransmitter.reset();
+         mTransmitter = null;
+      }
+      /* Disable Receiver */
+      if (mReceiver != null)
+      {
+         bStatus = mReceiver.reset();
+         mReceiver = null;
+      }
+      stop();
+      return(bStatus);
+   }
 
    /*
     * Restart FM Transmitter: Disables FM receiver mode or transmitter is already active
@@ -899,6 +935,31 @@ public class FMTransmitterService extends Service
             }
         }
       }
+
+      public void onRadioDisabled()
+      {
+         Log.d(LOGTAG, "onRadioDisabled");
+
+         if(isFmOn()) {
+             // Received Radio Disable event unexpectedly
+             Log.d(LOGTAG, "FM is ON, reset FM");
+             fmRadioReset();
+             try
+             {
+                /* Notify the UI/Activity, only if the service is "bound"
+                   by an activity and if Callbacks are registered
+                */
+                if((mServiceInUse) && (mCallbacks != null) )
+                {
+                    mCallbacks.onRadioReset();
+                }
+             }
+             catch (RemoteException e)
+             {
+                e.printStackTrace();
+             }
+         }
+      }
    };
 
    /* Receiver callbacks back from the FM Stack */
@@ -908,10 +969,32 @@ public class FMTransmitterService extends Service
       {
          Log.d(LOGTAG, "FmRxEvEnableReceiver");
       }
-
       public void FmRxEvDisableReceiver()
       {
          Log.d(LOGTAG, "FmRxEvDisableReceiver");
+      }
+      public void FmRxEvRadioReset()
+      {
+         Log.d(LOGTAG, "FmRxEvRadioReset");
+         if(isFmOn()) {
+             // Received Radio Reset event
+             Log.d(LOGTAG, "FM is ON, reset FM");
+             fmRadioReset();
+             try
+             {
+                /* Notify the UI/Activity, only if the service is "bound"
+                   by an activity and if Callbacks are registered
+                */
+                if((mServiceInUse) && (mCallbacks != null) )
+                {
+                    mCallbacks.onRadioReset();
+                }
+             }
+             catch (RemoteException e)
+             {
+                e.printStackTrace();
+             }
+         }
       }
 
       public void FmRxEvRadioTuneStatus(int frequency)

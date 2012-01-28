@@ -992,6 +992,11 @@ public class CfgRfItemSelectedListener implements OnItemSelectedListener {
              Log.d(LOGTAG, "mServiceCallbacks.onDisabled :");
           }
 
+          public void onRadioReset()
+          {
+             Log.d(LOGTAG, "mServiceCallbacks.onRadioReset :");
+          }
+
           public void onTuneStatusChanged()
           {
              Log.d(LOGTAG, "mServiceCallbacks.onTuneStatusChanged :");

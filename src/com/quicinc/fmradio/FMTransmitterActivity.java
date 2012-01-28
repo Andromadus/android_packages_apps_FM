@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -876,6 +876,12 @@ public class FMTransmitterActivity extends Activity {
                 }
         }
 
+        private void resetSearchProgress() {
+                Message msg = new Message();
+                msg.what = END_PROGRESS_DLG;
+                mSearchProgressHandler.sendMessage(msg);
+        }
+
         private void setupPresetLayout() {
                 /*
                  * For every station, save the station as a tag and update the display
@@ -1337,6 +1343,10 @@ public class FMTransmitterActivity extends Activity {
                     mHandler.post(mRadioStateUpdated);
                 }
 
+                public void onRadioReset() throws RemoteException {
+                    mHandler.post(mRadioReset);
+                }
+
                 public void onEnabled(boolean status) throws RemoteException {
                     mHandler.post(mRadioStateUpdated);
                 }
@@ -1386,6 +1396,15 @@ public class FMTransmitterActivity extends Activity {
                     disableRadio();
                 }
 
+             }
+          };
+        final Runnable mRadioReset = new Runnable() {
+            public void run() {
+                    /* Save the existing frequency */
+                    resetSearchProgress();
+                    FmSharedPreferences.setTunedFrequency(mTunedFrequency);
+                    SavePreferences();
+                    enableRadioOnOffUI(false);
              }
           };
 }

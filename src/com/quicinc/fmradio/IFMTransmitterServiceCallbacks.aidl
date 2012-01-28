@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009,2012 Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@ interface IFMTransmitterServiceCallbacks
 {
   void onEnabled(boolean bStatus);
   void onDisabled();
+  void onRadioReset();
   void onTuneStatusChanged(int frequency);
   void onRadioTextChanged();
   void onSearchListComplete(boolean bStatus);
