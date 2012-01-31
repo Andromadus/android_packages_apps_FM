@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -459,6 +459,7 @@ public class FMTransmitterService extends Service
    private boolean fmOn() {
       boolean bStatus=false;
       Log.d(LOGTAG, "fmOn");
+      mWakeLock.acquire(10*1000);
       try {
       mTransmitter = new FmTransmitter(FMRADIO_DEVICE_FD_STRING, transmitCallbacks);
       }
