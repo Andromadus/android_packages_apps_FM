@@ -72,6 +72,8 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.database.Cursor;
 import com.quicinc.utils.A2dpDeviceStatus;
+import android.media.AudioManager;
+import android.content.ComponentName;
 
 /**
  * Provides "background" FM Radio (that uses the hardware) capabilities,
@@ -89,11 +91,10 @@ public class FMRadioService extends Service
 
    private FmReceiver mReceiver;
    private BroadcastReceiver mHeadsetReceiver = null;
-   private BroadcastReceiver mHeadsetHookListener = null;
    private BroadcastReceiver mSdcardUnmountReceiver = null;
    private BroadcastReceiver mMusicCommandListener = null;
    private boolean mOverA2DP = false;
-
+   private BroadcastReceiver mFmMediaButtonListener;
    private IFMRadioServiceCallbacks mCallbacks;
    private static FmSharedPreferences mPrefs;
    private boolean mHeadsetPlugged = false;
@@ -142,6 +143,7 @@ public class FMRadioService extends Service
    //on shutdown not to send start Intent to AudioManager
    private boolean mAppShutdown = false;
    private boolean mSingleRecordingInstanceSupported = false;
+   private AudioManager mAudioManager;
 
    private static final String IOBUSY_UNVOTE = "com.android.server.CpuGovernorService.action.IOBUSY_UNVOTE";
 
@@ -168,7 +170,7 @@ public class FMRadioService extends Service
       registerExternalStorageListener();
       // registering media button receiver seperately as we need to set
       // different priority for receiving media events
-      registerMediaButtonReceiver();
+      registerFmMediaButtonReceiver();
       if ( false == SystemProperties.getBoolean("ro.fm.mulinst.recording.support",true)) {
            mSingleRecordingInstanceSupported = true;
       }
@@ -206,10 +208,6 @@ public class FMRadioService extends Service
           unregisterReceiver(mHeadsetReceiver);
           mHeadsetReceiver = null;
       }
-      if( mHeadsetHookListener != null ) {
-          unregisterReceiver(mHeadsetHookListener);
-          mHeadsetHookListener = null;
-      }
       if( mSdcardUnmountReceiver != null ) {
           unregisterReceiver(mSdcardUnmountReceiver);
           mSdcardUnmountReceiver = null;
@@ -217,6 +215,10 @@ public class FMRadioService extends Service
       if( mMusicCommandListener != null ) {
           unregisterReceiver(mMusicCommandListener);
           mMusicCommandListener = null;
+      }
+      if( mFmMediaButtonListener != null ) {
+          unregisterReceiver(mFmMediaButtonListener);
+          mFmMediaButtonListener = null;
       }
 
       /* Since the service is closing, disable the receiver */
@@ -351,23 +353,14 @@ public class FMRadioService extends Service
             registerReceiver(mHeadsetReceiver, iFilter);
         }
     }
-    public void registerMediaButtonReceiver() {
-        if (mHeadsetHookListener == null) {
-            mHeadsetHookListener = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Log.d(LOGTAG, "ACTION_MEDIA_BUTTON Intent received");
-                    String action = intent.getAction();
-                    if (action.equals(Intent.ACTION_MEDIA_BUTTON)) {
-                        KeyEvent event = (KeyEvent)
-                              intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-                        if (event == null) {
-                            return;
-                        }
-                        int keycode = event.getKeyCode();
-                        int key_action = event.getAction();
-                        if((KeyEvent.KEYCODE_HEADSETHOOK == keycode) &&
-                           (key_action == KeyEvent.ACTION_DOWN)) {
+
+    public void registerFmMediaButtonReceiver() {
+        if (mFmMediaButtonListener == null) {
+            mFmMediaButtonListener = new BroadcastReceiver() {
+                 public void onReceive(Context context, Intent intent) {
+                     Log.d(LOGTAG, "FMMediaButtonIntentReceiver.FM_MEDIA_BUTTON");
+                     String action = intent.getAction();
+                     if (action.equals(FMMediaButtonIntentReceiver.FM_MEDIA_BUTTON)) {
                             if(isFmOn()){
                                 //FM should be off when Headset hook pressed.
                                 fmOff();
@@ -406,18 +399,15 @@ public class FMRadioService extends Service
                                     e.printStackTrace();
                                 }
                             }
-                        }
-                    }
-                }
+                     }
+                 }
             };
             IntentFilter iFilter = new IntentFilter();
-            iFilter.addAction(Intent.ACTION_MEDIA_BUTTON);
-            iFilter.setPriority(10000); // AudioService registers with 1000 and
-                                        // consume the broadcast so our
-                                        // priority to be higher
-            registerReceiver(mHeadsetHookListener, iFilter);
-        }
-    }
+            iFilter.addAction(FMMediaButtonIntentReceiver.FM_MEDIA_BUTTON);
+            registerReceiver(mFmMediaButtonListener, iFilter);
+         }
+     }
+
     public void registerMusicServiceCommandReceiver() {
         if (mMusicCommandListener == null) {
             mMusicCommandListener = new BroadcastReceiver() {
@@ -550,7 +540,6 @@ public class FMRadioService extends Service
       AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
       audioManager.requestAudioFocus(mAudioFocusListener, AudioManager.STREAM_FM,
               AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-
       // make sure the service will shut down on its own if it was
       // just started but not bound to and nothing is playing
       mDelayedStopHandler.removeCallbacksAndMessages(null);
@@ -573,7 +562,6 @@ public class FMRadioService extends Service
          // an in-progress call ends, so don't stop the service now.
          return true;
       }
-
       stopSelf(mServiceStartId);
       return true;
    }
@@ -592,6 +580,11 @@ public class FMRadioService extends Service
        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
        audioManager.requestAudioFocus(mAudioFocusListener, AudioManager.STREAM_FM,
               AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+       Log.d(LOGTAG,"FM registering for registerMediaButtonEventReceiver");
+       mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+       ComponentName fmRadio = new ComponentName(this.getPackageName(),
+                                  FMMediaButtonIntentReceiver.class.getName());
+       mAudioManager.registerMediaButtonEventReceiver(fmRadio);
        mStoppedOnFocusLoss = false;
 
        if ((true == mA2dpDeviceState.isDeviceAvailable()) &&
@@ -1217,6 +1210,20 @@ public class FMRadioService extends Service
    }
 
    private void stop() {
+      Log.d(LOGTAG,"in stop");
+      try {
+           if (mFMOn && (mCallbacks != null))
+               mCallbacks. onFinishActivity();
+      } catch (RemoteException e) {
+           e.printStackTrace();
+      }
+      if (!mServiceInUse) {
+          Log.d(LOGTAG,"calling unregisterMediaButtonEventReceiver in stop");
+          mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+          ComponentName fmRadio = new ComponentName(this.getPackageName(),
+                                  FMMediaButtonIntentReceiver.class.getName());
+          mAudioManager.unregisterMediaButtonEventReceiver(fmRadio);
+      }
       gotoIdleState();
       mFMOn = false;
    }

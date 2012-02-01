@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:icon="@drawable/ic_launcher_fmradio"
@@ -37,6 +38,11 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name="com.quicinc.fmradio.FMMediaButtonIntentReceiver">
+            <intent-filter>
+                   <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
 
         <activity android:name=".Settings"
                   android:label="@string/settings_menu">

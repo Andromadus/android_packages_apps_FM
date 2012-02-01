@@ -222,6 +222,7 @@ public class FMRadio extends Activity
    private static boolean mIsScaning = false;
    private static boolean mIsSeeking = false;
    private static boolean mIsSearching = false;
+   private static boolean mIsHomeKeyPressed = false;
    private static int mScanPty = 0;
 
    private Animation mAnimation = null;
@@ -407,6 +408,7 @@ public class FMRadio extends Activity
             }
           }
       }
+      mIsHomeKeyPressed = true;
       super.onStop();
    }
 
@@ -494,9 +496,18 @@ public class FMRadio extends Activity
       unbindFromService(this);
       mService = null;
       Log.d(LOGTAG, "onDestroy: unbindFromService completed");
+      mIsHomeKeyPressed = false;
       super.onDestroy();
    }
 
+   public void onActivityFinish() {
+      Log.d(LOGTAG, "onActivityFinish:");
+      if (!hasWindowFocus() && (mService != null) && mIsHomeKeyPressed) {
+         mIsHomeKeyPressed = false;
+         unbindFromService(this);
+         finish();
+      }
+   }
    @Override
    public boolean onCreateOptionsMenu(Menu menu) {
       super.onCreateOptionsMenu(menu);
@@ -3502,6 +3513,11 @@ public class FMRadio extends Activity
       {
          Log.d(LOGTAG, "mServiceCallbacks.onRecordingStopped:");
          stopRecording();
+      }
+      public void onFinishActivity()
+      {
+         Log.d(LOGTAG, "mServiceCallbacks.onFinish:");
+         onActivityFinish();
       }
    };
 }

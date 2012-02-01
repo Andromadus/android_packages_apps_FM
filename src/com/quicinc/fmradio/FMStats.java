@@ -1055,6 +1055,10 @@ public class CfgRfItemSelectedListener implements OnItemSelectedListener {
           {
              Log.d(LOGTAG, "mServiceCallbacks.onDisabled :");
           }
+          public void onFinishActivity()
+          {
+             Log.d(LOGTAG, "mServiceCallbacks.onFinishActivity:");
+          }
       };
       /* Radio Vars */
      final Handler mHandler = new Handler();
