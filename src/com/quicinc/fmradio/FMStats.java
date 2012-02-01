@@ -577,19 +577,14 @@ public class CfgRfItemSelectedListener implements OnItemSelectedListener {
         {
              try {
              StringBuilder tempStr = new StringBuilder();
-             tempStr.append(aRes.getFreq());
-             tempStr.append('\t');
-             tempStr.append(aRes.getRSSI());
-             tempStr.append('\t');
-             tempStr.append(aRes.getIoC());
-             tempStr.append('\t');
-             tempStr.append(aRes.getIntDet());
-             tempStr.append('\t');
-
+             tempStr.append(String.format("%10s", aRes.getFreq()));
+             tempStr.append(String.format("%10s",aRes.getRSSI()));
+             tempStr.append(String.format("%10s",aRes.getIoC()));
+             tempStr.append(String.format("%10s",aRes.getIntDet()));
              if("smd".equals(SystemProperties.get("ro.qualcomm.bt.hci_transport")))
              {
                   tempStr.append(aRes.getSINR());
-                  tempStr.append('\t');
+                  tempStr.append('\n');
              } else
              {
                   tempStr.append(aRes.getMpxDcc());
