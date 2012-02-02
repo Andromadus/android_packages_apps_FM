@@ -1900,22 +1900,45 @@ public class FMRadio extends Activity
       }
    };
 
+   private Handler mEnableRadioHandler = new Handler();
+   private Handler mDisableRadioHandler = new Handler();
+   private Runnable mEnableRadioTask = new Runnable() {
+    public void run() {
+       enableRadio();
+       mOnOffButton.setEnabled(true);
+       mOnOffButton.setClickable(true);
+       mOnOffButton.setOnClickListener(mTurnOnOffClickListener);
+    }
+  };
+  private Runnable mDisableRadioTask = new Runnable() {
+    public void run() {
+       disableRadio();
+       mOnOffButton.setEnabled(true);
+       mOnOffButton.setClickable(true);
+       mOnOffButton.setOnClickListener(mTurnOnOffClickListener);
+    }
+  };
    private View.OnClickListener mTurnOnOffClickListener
    = new View.OnClickListener() {
       public void onClick(View v) {
-
+         mOnOffButton.setEnabled(false);
+         mOnOffButton.setClickable(false);
+         mOnOffButton.setOnClickListener(null);
          if (isFmOn())
          {
-            disableRadio();
+            mEnableRadioHandler.removeCallbacks(mEnableRadioTask);
+            mDisableRadioHandler.removeCallbacks(mDisableRadioTask);
+            mDisableRadioHandler.postDelayed(mDisableRadioTask, 0);
+
          } else
          {
-            enableRadio();
+            mDisableRadioHandler.removeCallbacks(mDisableRadioTask);
+            mEnableRadioHandler.removeCallbacks(mEnableRadioTask);
+            mEnableRadioHandler.postDelayed(mEnableRadioTask, 0);
          }
-         setTurnOnOffButtonImage();
          cleanupTimeoutHandler();
       }
    };
-
    private void setTurnOnOffButtonImage() {
       if (isFmOn() == true)
       {
