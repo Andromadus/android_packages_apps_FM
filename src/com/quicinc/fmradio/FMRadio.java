@@ -2258,6 +2258,7 @@ public class FMRadio extends Activity
          if (mRadioTextTV != null) {
             mRadioTextTV.setVisibility(View.VISIBLE);
             mRadioTextTV.setText(getString(R.string.msg_noantenna));
+            mRadioTextScroller.mOriginalString = getString(R.string.msg_noantenna);
          }
          if (mOnOffButton != null) {
             mOnOffButton.setEnabled(false);
@@ -2267,6 +2268,7 @@ public class FMRadio extends Activity
       {
          if (mRadioTextTV != null) {
             mRadioTextTV.setText("");
+            mRadioTextScroller.mOriginalString = "";
          }
          if (mOnOffButton != null) {
             mOnOffButton.setEnabled(false);
@@ -2276,6 +2278,7 @@ public class FMRadio extends Activity
       {
          if (mRadioTextTV != null) {
             mRadioTextTV.setText("");
+            mRadioTextScroller.mOriginalString = "";
          }
          if (mOnOffButton != null) {
             mOnOffButton.setEnabled(true);
@@ -2388,6 +2391,7 @@ public class FMRadio extends Activity
       mStationCallSignTV.setText(mTunedStation.getPIString());
       mProgramTypeTV.setText(mTunedStation.getPtyString());
       mRadioTextTV.setText("");
+      mRadioTextScroller.mOriginalString = "";
       mProgramServiceTV.setText("");
       mStereoTV.setText("");
       setupPresetLayout();
@@ -2933,6 +2937,7 @@ public class FMRadio extends Activity
       //mTunedStation.setPI(20942);
       mTunedStation.setPty(0);
       mRadioTextTV.setText("");
+      mRadioTextScroller.mOriginalString = "";
       mProgramServiceTV.setText("");
       mRadioTextScroller.stopScroll();
       updateStationInfoToUI();
@@ -3078,11 +3083,13 @@ public class FMRadio extends Activity
                {
                   Log.d(LOGTAG, "mUpdateRadioText: Updatable string: [" + str + "]");
                   mRadioTextTV.setText(str);
+                  mRadioTextScroller.mOriginalString = str;
                }
                /* Rest the string to empty*/
                else if (TextUtils.isEmpty(str))
                {
                   mRadioTextTV.setText("");
+                  mRadioTextScroller.mOriginalString = "";
                } else
                {
                   //Log.d(LOGTAG, "mUpdateRadioText: Leaving old string " + mRadioTextTV.getText());
