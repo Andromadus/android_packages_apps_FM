@@ -518,6 +518,10 @@ public class FMTransmitterService extends Service
                 if( true != bStatus ) {
                     Log.d(LOGTAG, "FMTx setRdsOn failed");
                 } else {
+                    if(false == mTransmitter.getInternalAntenna()) {
+                        Log.d(LOGTAG, "Setting internal antenna explicitly");
+                        mTransmitter.setInternalAntenna(true);
+                    }
                     startNotification();
                 }
          }
@@ -836,10 +840,13 @@ public class FMTransmitterService extends Service
     */
    public boolean isInternalAntennaAvailable()
    {
-      boolean bAvailable  = true;
+      boolean bAvailable  = false;
       /* Update this when the API is available */
 
-      if( null != mReceiver ) {
+      if(null != mTransmitter ) {
+          bAvailable = mTransmitter.getInternalAntenna();
+          Log.d(LOGTAG, "internalAntennaAvailable: " + bAvailable);
+      } else if( null != mReceiver ) {
           bAvailable = mReceiver.getInternalAntenna();
           Log.d(LOGTAG, "internalAntennaAvailable: " + bAvailable);
       }
