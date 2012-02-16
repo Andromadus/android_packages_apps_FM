@@ -286,8 +286,8 @@ public class FMTransmitterActivity extends Activity {
                 } catch(RemoteException ex){
                     Log.d(LOGTAG,"expection for service");
                 }
-                enableRadioOnOffUI();
                 updateStationInfoToUI();
+                enableRadioOnOffUI();
         }
 
         @Override
@@ -1067,7 +1067,7 @@ public class FMTransmitterActivity extends Activity {
         final Runnable mUpdateRadioText = new Runnable() {
                 public void run() {
                         String str = "";
-                        if (mService != null) {
+                        if ((mService != null) && isFmOn()) {
                                 try {
                                         /* Get Radio Text and update the display */
                                         str = mService.getRadioText();
@@ -1310,6 +1310,10 @@ public class FMTransmitterActivity extends Activity {
                                                 Log.e(LOGTAG, "disable radio is being called");
                                                 disableRadio();
                                             }
+                                        }
+                                        else
+                                        {
+                                            enableRadioOnOffUI(false);
                                         }
                                 } catch (RemoteException e) {
                                         e.printStackTrace();
